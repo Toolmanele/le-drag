@@ -67,12 +67,12 @@ function addLeDrag(el, drag, options) {
     }
     if (!checkKeyPress(controlKeyPress, keypress)) return
 
-    if (type) return
-    type = 'mouse'
     sX = e.clientX
     sY = e.clientY
     pd(e.target)
     if (!target) return
+    if (type) return
+    type = 'mouse'
     document.on('mousemove', pmm)
     document.on('mouseup', pum)
   })
@@ -82,8 +82,7 @@ function addLeDrag(el, drag, options) {
     if (options && options.stop) {
       e.stopPropagation()
     }
-    if (type) return
-    type = 'touch'
+
     if (e.touches.length !== 1) return
     // touches /targetTouches
     // sX = e.targetTouches[0].clientX
@@ -93,32 +92,58 @@ function addLeDrag(el, drag, options) {
     sY = tt.clientY
     pd(e.target)
     if (!target) return
+    if (type) return
+    type = 'touch'
     document.on('touchmove', pmt)
     document.on('touchend', put)
   })
 
   function pd(t) {
-    if (typeof drag.target === 'function') {
-      if (drag.target(t)) {
-        target = t
+    // 如果设定了 handler ,那么鼠标到 handler 的时候才会反应
+
+    if (
+      typeof drag.handler === 'string' ||
+      typeof drag.handler === 'function'
+    ) {
+      let handler
+      if (typeof drag.handler === 'string') {
+        handler = (t) => t.matches(drag.handler)
+      } else if (typeof drag.handler === 'string') {
+        handler = drag.handler
+      }
+
+      if (handler(t) || findParent(t, handler, el)) {
+        if (typeof drag.target === 'string') {
+          target = findParent(t, (t) => t.matches(drag.target), el)
+        } else if (typeof drag.target === 'function') {
+          target = findParent(t, drag.target, el)
+        } else {
+          target = el
+        }
       }
     } else {
-      target = el
-    }
-    // 如果设定了 handler ,那么鼠标到 handler 的时候才会反应
-    if (typeof drag.handler === 'function') {
-      if (drag.handler(t)) {
-        target = el
+      if (typeof drag.target === 'string') {
+        target = findParent(t, (t) => t.matches(drag.target), el)
+      } else if (typeof drag.target === 'function') {
+        target = findParent(t, drag.target, el)
       } else {
-        target = null
+        target = el
       }
     }
-
     if (target && typeof drag.start === 'function') {
       drag.start(target, sX, sY)
     }
   }
-
+  // 最多匹配到end
+  function findParent(t, cond, end) {
+    let p = t
+    while (p != end) {
+      if (cond(p)) {
+        return p
+      }
+      p = p.parentElement
+    }
+  }
   // if (typeof resize === 'function') {
   //   // 执行程序
   // }
