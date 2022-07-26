@@ -101,8 +101,20 @@ function addLeDrag(el, drag, options) {
   function pd(t) {
     // 如果设定了 handler ,那么鼠标到 handler 的时候才会反应
 
+    function getTarget() {
+      if (typeof drag.target === 'string') {
+        target = findParent(t, (t) => t.matches(drag.target), el)
+      } else if (typeof drag.target === 'function') {
+        target = findParent(t, drag.target, el)
+      } else if (drag.target instanceof Element) {
+        target = findParent(t, (t) => t === drag.target, el)
+      } else {
+        target = el
+      }
+    }
     if (
       typeof drag.handler === 'string' ||
+      drag.handler instanceof Element ||
       typeof drag.handler === 'function'
     ) {
       let handler
@@ -110,25 +122,15 @@ function addLeDrag(el, drag, options) {
         handler = (t) => t.matches(drag.handler)
       } else if (typeof drag.handler === 'string') {
         handler = drag.handler
+      } else if (drag.handler instanceof Element) {
+        handler = (t) => t === drag.handler
       }
 
       if (handler(t) || findParent(t, handler, el)) {
-        if (typeof drag.target === 'string') {
-          target = findParent(t, (t) => t.matches(drag.target), el)
-        } else if (typeof drag.target === 'function') {
-          target = findParent(t, drag.target, el)
-        } else {
-          target = el
-        }
+        getTarget()
       }
     } else {
-      if (typeof drag.target === 'string') {
-        target = findParent(t, (t) => t.matches(drag.target), el)
-      } else if (typeof drag.target === 'function') {
-        target = findParent(t, drag.target, el)
-      } else {
-        target = el
-      }
+      getTarget()
     }
     if (target && typeof drag.start === 'function') {
       drag.start(target, sX, sY)
