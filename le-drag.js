@@ -35,6 +35,7 @@ function addLeDrag(el, drag, options) {
     sY,
     type,
     target,
+    handler,
     button =
       options && typeof options.mousebtn === 'number' ? options.mousebtn : 0,
     stop = options && options.stop,
@@ -69,7 +70,7 @@ function addLeDrag(el, drag, options) {
 
     sX = e.clientX
     sY = e.clientY
-    pd(e.target)
+    pd(e)
     if (!target) return
     if (type) return
     type = 'mouse'
@@ -90,7 +91,7 @@ function addLeDrag(el, drag, options) {
     let tt = e.targetTouches[e.targetTouches.length - 1]
     sX = tt.clientX
     sY = tt.clientY
-    pd(e.target)
+    pd(e)
     if (!target) return
     if (type) return
     type = 'touch'
@@ -98,7 +99,8 @@ function addLeDrag(el, drag, options) {
     document.on('touchend', put)
   })
 
-  function pd(t) {
+  function pd(e) {
+    let t = e.target
     // 如果设定了 handler ,那么鼠标到 handler 的时候才会反应
 
     function getTarget() {
@@ -117,26 +119,31 @@ function addLeDrag(el, drag, options) {
       drag.handler instanceof Element ||
       typeof drag.handler === 'function'
     ) {
-      let handler
+      let _handler
       if (typeof drag.handler === 'string') {
-        handler = (t) => t.matches(drag.handler)
+        _handler = (t) => t.matches(drag.handler)
       } else if (typeof drag.handler === 'string') {
-        handler = drag.handler
+        _handler = drag.handler
       } else if (drag.handler instanceof Element) {
-        handler = (t) => t === drag.handler
+        _handler = (t) => t === drag.handler
       }
 
-      if (handler(t) || findParent(t, handler, el)) {
+      if (_handler(t)) {
+        handler = t
+      } else {
+        handler = findParent(t, _handler, el)
+      }
+      if (handler) {
         getTarget()
       }
     } else {
       getTarget()
     }
     if (target && typeof drag.start === 'function') {
-      drag.start(target, sX, sY)
+      drag.start(target, sX, sY, e)
     }
   }
-  // 最多匹配到end
+  // 最多匹配到 end
   function findParent(t, cond, end) {
     let p = t
     while (p != end) {
@@ -146,6 +153,7 @@ function addLeDrag(el, drag, options) {
       p = p.parentElement
     }
   }
+  addLeDrag.findParent = findParent
   // if (typeof resize === 'function') {
   //   // 执行程序
   // }
